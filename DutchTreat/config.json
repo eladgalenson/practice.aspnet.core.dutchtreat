@@ -1,0 +1,14 @@
+﻿{
+    "property1": "true",
+    "ConnectionStrings": {
+        "DutchConnectionString": "server=ELAD-LAP;DataBase=DutchTreatDb;Integrated Security=true;MultipleActiveResultSets=true;"
+    },
+    "Logging": {
+        "LogeLevel": {
+            "Microsoft": "warning",
+            "DutchRepository": "information"
+        }
+        
+    }
+
+}
