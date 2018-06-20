@@ -11,20 +11,43 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
+using AutoMapper;
+using DutchTreat.Data.Entities;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.IdentityModel.Tokens;
+using System.Text;
 
 namespace DutchTreat
 {
     public class Startup
     {
         private IConfiguration _configuration;
-        public Startup(IConfiguration configuration)
+        private IHostingEnvironment _hostingEnvironment;
+
+        public Startup(IConfiguration configuration, IHostingEnvironment env)
         {
             _configuration = configuration;
+            _hostingEnvironment = env;
         }
         // This method gets called by the runtime. Use this method to add services to the container.
         // For more information on how to configure your application, visit https://go.microsoft.com/fwlink/?LinkID=398940
         public void ConfigureServices(IServiceCollection services)
         {
+            services.AddIdentity<StoreUser, IdentityRole>(cfg =>
+                cfg.User.RequireUniqueEmail = true
+                ).AddEntityFrameworkStores<DutchContext>();
+
+            services.AddAuthentication().AddCookie().AddJwtBearer(cfg =>
+            {
+                cfg.TokenValidationParameters = new TokenValidationParameters()
+                {
+                    ValidIssuer = _configuration["Tokens:Issuer"],
+                    ValidAudience = _configuration["Tokens:Audience"],
+                    IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["Tokens:Key"]))
+                };
+            });
+
             services.AddScoped<IDutchRepository, DutchRepository>();
             services.AddScoped<SeedGenerator>();
             services.AddDbContext<DutchContext>(cfg =>
@@ -32,13 +55,25 @@ namespace DutchTreat
                 cfg.UseSqlServer(_configuration.GetConnectionString("DutchConnectionString"));
             });
             services.AddTransient<IMailService, NullMailService>();
-            services.AddMvc();
+            services.AddMvc(opt =>
+              {
+                  if (_hostingEnvironment.IsProduction())
+                  {
+                      opt.Filters.Add(new RequireHttpsAttribute());
+                  }
+              }
+                ).
+                AddJsonOptions(opt=>opt.SerializerSettings.ReferenceLoopHandling = Newtonsoft.Json.ReferenceLoopHandling.Ignore);
+            services.AddAutoMapper();
+           // services.AddAuthentication().AddCookie();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
         public void Configure(IApplicationBuilder app, IHostingEnvironment env)
         {
-            if(env.IsDevelopment())
+            
+
+            if (env.IsDevelopment())
             {
                 app.UseDeveloperExceptionPage();
             }
@@ -58,6 +93,8 @@ namespace DutchTreat
             //app.UseDefaultFiles();
             app.UseStaticFiles();
 
+            app.UseAuthentication();
+
             app.UseMvc(cfg =>
             {
                 cfg.MapRoute("Default",
@@ -72,7 +109,7 @@ namespace DutchTreat
                 using (var scope = app.ApplicationServices.CreateScope())
                 {
                     var seed = scope.ServiceProvider.GetService<SeedGenerator>();
-                    seed.Seed();
+                    seed.Seed().Wait();
                 }
             }
 

@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using DutchTreat.Data;
 using DutchTreat.Services;
 using DutchTreat.ViewModels;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 // For more information on enabling MVC for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
@@ -60,9 +61,10 @@ namespace DutchTreat.Controllers
             return View();
         }
         [HttpGet("shop")]
+        [Authorize]
         public IActionResult Shop()
         {
-            return View(_dutchRepository.GetProducts().ToList());
+            return View(_dutchRepository.GetAllProducts().ToList());
         }
     }
 }

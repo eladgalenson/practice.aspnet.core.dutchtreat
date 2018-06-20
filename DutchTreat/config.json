@@ -8,7 +8,12 @@
             "Microsoft": "warning",
             "DutchRepository": "information"
         }
-        
+
+    },
+    "Tokens": {
+        "Audience": "users",
+        "Issuer": "localhost",
+        "Key": "HeyWhatsUpYo!HeyWhatsUpYo!"
     }
 
 }
